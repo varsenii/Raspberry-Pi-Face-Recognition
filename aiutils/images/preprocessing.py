@@ -10,13 +10,33 @@ Original file is located at
 import cv2
 
 def blob2image(blob, size):
+    """Convert a blob to an image with a given size and normalize the pixel values.
+
+    Args:
+        blob: A numpy array with shape (1, channels, height, width) that represents the blob.
+        size: A tuple of two integers that specifies the width and height of the output image.
+
+    Returns:
+        A numpy array with shape (height, width, channels) that represents the image with pixel values in the range 0-255.
+    """
     blob_image = blob[0].transpose(1, 2, 0)
     blob_image = cv2.resize(blob_image, size)
     # Normalize the pixel values (0-255)
     blob_image = cv2.normalize(blob_image, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
     return blob_image
 
-def resize(image, width):
-    scaling_factor = width / image.shape[1]
-    new_height = int(image.shape[0] * scaling_factor)
-    return cv2.resize(image, (width, new_height), interpolation=cv2.INTER_AREA)
+def resize_to_max_width(image, max_width):
+    """Resize an image to have a maximum width while preserving the aspect ratio.
+
+    Args:
+        image: A numpy array with shape (height, width, channels) that represents the image.
+        max_width: An integer that specifies the maximum width of the resized image.
+
+    Returns:
+        A numpy array with shape (new_height, max_width, channels) that represents the resized image. If the image is already smaller than max_width, it returns the original image without resizing.
+    """
+    if image.shape[1] < max_width:
+        scaling_factor = max_width / image.shape[1]
+        new_height = int(image.shape[0] * scaling_factor)
+        return cv2.resize(image, (max_width, new_height), interpolation=cv2.INTER_AREA)
+    return image

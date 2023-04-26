@@ -5,24 +5,21 @@ import time
 import cv2
 
 from config import CASCADE_PATH, ENCODINGS_PATH, BOX_COLOR
-from aiutils.images.preprocessing import resize
+from aiutils.images.preprocessing import resize_to_max_width
+from aiutils.video import WebcamVideoStream, FPS
 
 print('[INFO] loading the embeddings of the known faces along with OpenCV\'s Haar Cascades')
 data = pickle.loads(open(ENCODINGS_PATH, 'rb').read())
 detector = cv2.CascadeClassifier(CASCADE_PATH)
 
 print('[INFO] starting video stream...')
-vid = cv2.VideoCapture(0)
-start_time = time.time()
-n_frames = 0
+vs = WebcamVideoStream(0).start()
+fps = FPS().start()
 while True:
-    ret, frame = vid.read()
-    if not ret:
-        break
-    n_frames += 1
+    frame = vs.read()
 
     # grab the frame from the threaded video stream and resize it to 500px (to speedup processing)
-    frame = resize(frame, width=500)
+    frame = resize_to_max_width(frame, max_width=500)
 
     # convert the input image frame from BGR to grayscale for face detection
     # and to RGB for face recognition
@@ -63,13 +60,15 @@ while True:
         cv2.rectangle(frame, (left, top), (righ, bottom), BOX_COLOR, 2)
         y = top - 15 if top - 15 > 15 else top + 15
         cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.75, BOX_COLOR, 2)
-    
-    elapsed_time = time.time() - start_time
-    fps = n_frames / elapsed_time
-    print(f'FPS: {fps:.2f}')
 
     cv2.imshow('webcam', frame)
     # Wait for 1 millisecond and check for user input
     key = cv2.waitKey(1)
     if key == ord('q'):
         break
+
+    fps.update()
+    print(f'FPS: {fps.fps():.2f}')
+
+vs.stop()
+cv2.destroyAllWindows()
